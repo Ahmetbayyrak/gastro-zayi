@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="tr" data-theme="dark">
 <head>
-<link rel="icon" type="image/png" href="https://i.imgur.com/n1mOqww.png">
-<link rel="apple-touch-icon" href="https://i.imgur.com/n1mOqww.png">
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gastro Kafe - Personel & Admin Zayi Takip</title>
+    <link rel="icon" type="image/png" href="https://i.imgur.com/n1mOqww.png">
+    <link rel="apple-touch-icon" href="https://i.imgur.com/n1mOqww.png">
     <!-- Firebase Compat SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -38,7 +37,7 @@
 
         /* APP LAYOUT */
         #app-screen { display: none; }
-        header { background: var(--bg-sidebar); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; sticky: top; }
+        header { background: var(--bg-sidebar); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
         .app-container { display: flex; max-width: 1280px; margin: 0 auto; padding: 20px; gap: 20px; }
         aside { width: 220px; display: flex; flex-direction: column; gap: 8px; }
         main { flex: 1; }
@@ -61,7 +60,6 @@
         .modal { background: var(--bg-card); border-radius: var(--radius-md); width: 100%; max-width: 480px; padding: 20px; border: 1px solid var(--border); }
 
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
-        .admin-only { display: none !important; }
 
         @media (max-width: 768px) {
             .app-container { flex-direction: column; }
@@ -96,7 +94,7 @@
         <div class="app-container">
             <aside>
                 <button class="btn btn-outline" onclick="switchTab('waste')">🗑️ Zayi Girişi</button>
-                <button class="btn btn-outline admin-only-nav" onclick="switchTab('admin')">👑 Admin & Ay Sonu</button>
+                <button class="btn btn-outline admin-only-nav" style="display:none;" onclick="switchTab('admin')">👑 Admin & Ay Sonu</button>
             </aside>
 
             <main>
@@ -118,7 +116,7 @@
                                         <th>Miktar</th>
                                         <th>Neden</th>
                                         <th>Maliyet Kaybı</th>
-                                        <th class="admin-only-col">İşlem</th>
+                                        <th class="admin-only-col" style="display:none;">İşlem</th>
                                     </tr>
                                 </thead>
                                 <tbody id="waste-table-body"></tbody>
@@ -197,14 +195,12 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // USER LIST (25 Personel + 1 Admin)
         const USERS = {
             "admin": { pass: "admin123", name: "Yönetici (Admin)", role: "admin" },
             "ahmet": { pass: "1234", name: "Ahmet Bayrak", role: "staff" },
             "mehmet": { pass: "1234", name: "Mehmet Yılmaz", role: "staff" },
             "ayse": { pass: "1234", name: "Ayşe Kaya", role: "staff" },
             "fatma": { pass: "1234", name: "Fatma Demir", role: "staff" }
-            // İhtiyaca göre kullanıcı isimleri buraya eklenebilir
         };
 
         let currentUser = null;
@@ -223,8 +219,10 @@
 
                 if (currentUser.role === 'admin') {
                     document.querySelectorAll('.admin-only-nav').forEach(el => el.style.display = 'inline-block');
+                    document.querySelectorAll('.admin-only-col').forEach(el => el.style.display = 'table-cell');
                 } else {
                     document.querySelectorAll('.admin-only-nav').forEach(el => el.style.display = 'none');
+                    document.querySelectorAll('.admin-only-col').forEach(el => el.style.display = 'none');
                 }
                 initApp();
             } else {
@@ -232,10 +230,7 @@
             }
         }
 
-        function handleLogout() {
-            location.reload();
-        }
-
+        function handleLogout() { location.reload(); }
         function switchTab(t) {
             document.getElementById('tab-waste').style.display = t === 'waste' ? 'block' : 'none';
             document.getElementById('tab-admin').style.display = t === 'admin' ? 'block' : 'none';
@@ -309,13 +304,12 @@
                         <td>${w.miktar}</td>
                         <td><span class="badge" style="background:rgba(244,67,54,0.2); color:#f44336;">${w.neden}</span></td>
                         <td style="color:var(--danger); font-weight:bold;">${(w.tutar || 0).toFixed(2)} ₺</td>
-                        ${isAdmin ? `<td><button class="btn btn-danger btn-sm" onclick="db.ref('zayiler/${id}').remove()">Sil</button></td>` : ''}
+                        ${isAdmin ? `<td><button class="btn btn-danger btn-sm" onclick="db.ref('zayiler/${id}').remove()">Sil</button></td>` : '<td style="display:none;"></td>'}
                     </tr>
                 `;
             }
         }
 
-        // CSV / EXCEL İNDİRME (Sadece Admin)
         function exportToCSV() {
             let csv = "Tarih,Personel,Urun,Miktar,Neden,Tutar (TL)\n";
             for (let id in wasteData) {
@@ -329,7 +323,6 @@
             link.click();
         }
 
-        // AYI KAPAT VE SIFIRLA (Sadece Admin)
         function resetMonthData() {
             if (confirm("DİKKAT: Mevcut ayın tüm zayi kayıtları silinecek ve yeni aya başlanacak! Onaylıyor musunuz?")) {
                 db.ref('zayiler').remove().then(() => {
